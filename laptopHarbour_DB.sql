@@ -891,3 +891,24 @@ BEGIN
     WHERE user_profiles.profile_id = i.profile_id;
 END
 GO
+
+------------------------------------------------------------
+-- Auto-cancel unpaid orders after 24 hours
+------------------------------------------------------------
+IF OBJECT_ID('trg_AutoCancel_UnpaidOrders', 'TR') IS NOT NULL
+    DROP TRIGGER trg_AutoCancel_UnpaidOrders;
+GO
+
+CREATE TRIGGER trg_AutoCancel_UnpaidOrders
+ON orders
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE orders
+    SET order_status = 'cancelled'
+    WHERE order_status = 'pending'
+      AND created_at <= DATEADD(MINUTE, -30, SYSUTCDATETIME());
+END
+GO
